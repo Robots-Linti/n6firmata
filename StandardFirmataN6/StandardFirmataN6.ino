@@ -22,14 +22,19 @@
 
 //#include <Servo.h>
 #include <Firmata.h>
-#include <DCMotor/DCMotor.h>
+#include <DCMotor.h>
 #include "Ping.h"
 #include <EEPROM.h>
-
 
 /*==============================================================================
  * GLOBAL VARIABLES
  *============================================================================*/
+
+/* Multiplo Pyfirmata UNLP vars */
+DCMotor motor0(M0_EN, M0_D0, M0_D1);
+DCMotor motor1(M1_EN, M1_D0, M1_D1);
+
+
 
 /* analog inputs */
 int analogInputsToReport = 0; // bitwise array to store pin reporting
@@ -436,6 +441,9 @@ void setup()
 {
   byte i;
 
+  motor0.setZeroZone(1);
+  motor1.setZeroZone(1);
+
   Firmata.setFirmwareVersion(2, 2);
 
   Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
@@ -518,4 +526,5 @@ void loop()
     }
   }
 }
+
 

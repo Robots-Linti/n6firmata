@@ -4,7 +4,7 @@
 /*
    2011.09.27 (yyyy.mm.dd):
    This class is based on the sketch created by David A. Mellis and Tom Igoe (please see notice below).
-   The class is a wrapper written by Julián U. da Silva Gillig and is under the RMPL (RobotGroup-Multiplo-Pacifist-License),
+   The class is a wrapper written by Julian U. da Silva Gillig and is under the RMPL (RobotGroup-Multiplo-Pacifist-License),
    available from http://robotgroup.com.ar and from http://minibloq.org.
 */
 
@@ -100,3 +100,5 @@ class PingSensor
 };
 
 #endif
+
+
