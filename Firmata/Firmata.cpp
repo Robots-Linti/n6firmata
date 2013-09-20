@@ -14,9 +14,8 @@
 //* Includes
 //******************************************************************************
 
-#include "WProgram.h"
-#include "HardwareSerial.h"
 #include "Firmata.h"
+#include "HardwareSerial.h"
 
 extern "C" {
 #include <string.h>
@@ -27,27 +26,27 @@ extern "C" {
 //* Support Functions
 //******************************************************************************
 
-void sendValueAsTwo7bitBytes(int value)
+void FirmataClass::sendValueAsTwo7bitBytes(int value)
 {
-  Serial1.print(value & B01111111, BYTE); // LSB
-  Serial1.print(value >> 7 & B01111111, BYTE); // MSB
+  FirmataSerial.write(value & B01111111); // LSB
+  FirmataSerial.write(value >> 7 & B01111111); // MSB
 }
 
-void startSysex(void)
+void FirmataClass::startSysex(void)
 {
-  Serial1.print(START_SYSEX, BYTE);
+  FirmataSerial.write(START_SYSEX);
 }
 
-void endSysex(void)
+void FirmataClass::endSysex(void)
 {
-  Serial1.print(END_SYSEX, BYTE);
+  FirmataSerial.write(END_SYSEX);
 }
 
 //******************************************************************************
 //* Constructors
 //******************************************************************************
 
-FirmataClass::FirmataClass(void)
+FirmataClass::FirmataClass(Stream &s) : FirmataSerial(s)
 {
   firmwareVersionCount = 0;
   systemReset();
@@ -57,42 +56,45 @@ FirmataClass::FirmataClass(void)
 //* Public Methods
 //******************************************************************************
 
-/* begin method for overriding default Serial1 bitrate */
+/* begin method for overriding default serial bitrate */
 void FirmataClass::begin(void)
 {
   begin(57600);
 }
 
-/* begin method for overriding default Serial1 bitrate */
+/* begin method for overriding default serial bitrate */
 void FirmataClass::begin(long speed)
 {
-#if defined(__AVR_ATmega128__)  // Wiring
-  Serial1.begin((uint32_t)speed);
-#else
-  Serial1.begin(speed);
-#endif
+  Serial.begin(speed);
+  FirmataSerial = Serial;
   blinkVersion();
-  delay(300);
   printVersion();
   printFirmwareVersion();
 }
 
-// output the protocol version message to the Serial1 port
+void FirmataClass::begin(Stream &s)
+{
+  FirmataSerial = s;
+  systemReset();
+  printVersion();
+  printFirmwareVersion();
+}
+
+// output the protocol version message to the serial port
 void FirmataClass::printVersion(void) {
-  Serial1.print(REPORT_VERSION, BYTE);
-  Serial1.print(FIRMATA_MAJOR_VERSION, BYTE);
-  Serial1.print(FIRMATA_MINOR_VERSION, BYTE);
+  FirmataSerial.write(REPORT_VERSION);
+  FirmataSerial.write(FIRMATA_MAJOR_VERSION);
+  FirmataSerial.write(FIRMATA_MINOR_VERSION);
 }
 
 void FirmataClass::blinkVersion(void)
 {
   // flash the pin with the protocol version
   pinMode(VERSION_BLINK_PIN,OUTPUT);
-  pin13strobe(FIRMATA_MAJOR_VERSION, 200, 400);
-  delay(300);
-  pin13strobe(2,1,4); // separator, a quick burst
-  delay(300);
-  pin13strobe(FIRMATA_MINOR_VERSION, 200, 400);
+  pin13strobe(FIRMATA_MAJOR_VERSION, 40, 210);
+  delay(250);
+  pin13strobe(FIRMATA_MINOR_VERSION, 40, 210);
+  delay(125);
 }
 
 void FirmataClass::printFirmwareVersion(void)
@@ -101,9 +103,9 @@ void FirmataClass::printFirmwareVersion(void)
 
   if(firmwareVersionCount) { // make sure that the name has been set before reporting
     startSysex();
-    Serial1.print(REPORT_FIRMWARE, BYTE);
-    Serial1.print(firmwareVersionVector[0]); // major version number
-    Serial1.print(firmwareVersionVector[1]); // minor version number
+    FirmataSerial.write(REPORT_FIRMWARE);
+    FirmataSerial.write(firmwareVersionVector[0]); // major version number
+    FirmataSerial.write(firmwareVersionVector[1]); // minor version number
     for(i=2; i<firmwareVersionCount; ++i) {
       sendValueAsTwo7bitBytes(firmwareVersionVector[i]);
     }
@@ -137,11 +139,11 @@ void FirmataClass::setFirmwareNameAndVersion(const char *name, byte major, byte 
 }
 
 //------------------------------------------------------------------------------
-// Serial1 Receive Handling
+// Serial Receive Handling
 
 int FirmataClass::available(void)
 {
-  return Serial1.available();
+  return FirmataSerial.available();
 }
 
 
@@ -175,7 +177,7 @@ void FirmataClass::processSysexMessage(void)
 
 void FirmataClass::processInput(void)
 {
-  int inputData = Serial1.read(); // this is 'int' to handle -1 when no data
+  int inputData = FirmataSerial.read(); // this is 'int' to handle -1 when no data
   int command;
     
   // TODO make sure it handles -1 properly
@@ -261,13 +263,13 @@ void FirmataClass::processInput(void)
 }
 
 //------------------------------------------------------------------------------
-// Serial1 Send Handling
+// Serial Send Handling
 
 // send an analog message
 void FirmataClass::sendAnalog(byte pin, int value) 
 {
   // pin can only be 0-15, so chop higher bits
-  Serial1.print(ANALOG_MESSAGE | (pin & 0xF), BYTE);
+  FirmataSerial.write(ANALOG_MESSAGE | (pin & 0xF));
   sendValueAsTwo7bitBytes(value);
 }
 
@@ -283,10 +285,10 @@ void FirmataClass::sendDigital(byte pin, int value)
    * digital pins.
    */
 
-  // TODO: the digital message should not be sent on the Serial1 port every
+  // TODO: the digital message should not be sent on the serial port every
   // time sendDigital() is called.  Instead, it should add it to an int
   // which will be sent on a schedule.  If a pin changes more than once
-  // before the digital message is sent on the Serial1 port, it should send a
+  // before the digital message is sent on the serial port, it should send a
   // digital message for each change.
 
   //    if(value == 0)
@@ -298,9 +300,9 @@ void FirmataClass::sendDigital(byte pin, int value)
 // send an 8-bit port in a single digital message (protocol v2)
 void FirmataClass::sendDigitalPort(byte portNumber, int portData)
 {
-  Serial1.print(DIGITAL_MESSAGE | (portNumber & 0xF),BYTE);
-  Serial1.print((byte)portData % 128, BYTE); // Tx bits 0-6
-  Serial1.print(portData >> 7, BYTE);  // Tx bits 7-13
+  FirmataSerial.write(DIGITAL_MESSAGE | (portNumber & 0xF));
+  FirmataSerial.write((byte)portData % 128); // Tx bits 0-6
+  FirmataSerial.write(portData >> 7);  // Tx bits 7-13
 }
 
 
@@ -308,7 +310,7 @@ void FirmataClass::sendSysex(byte command, byte bytec, byte* bytev)
 {
   byte i;
   startSysex();
-  Serial1.print(command, BYTE);
+  FirmataSerial.write(command);
   for(i=0; i<bytec; i++) {
     sendValueAsTwo7bitBytes(bytev[i]);        
   }
@@ -401,7 +403,7 @@ void FirmataClass::systemReset(void)
 {
   byte i;
 
-  waitForData = 0; // this flag says the next Serial1 input will be data
+  waitForData = 0; // this flag says the next serial input will be data
   executeMultiByteCommand = 0; // execute this after getting multi-byte data
   multiByteChannel = 0; // channel data for multiByteCommands
 
@@ -416,7 +418,7 @@ void FirmataClass::systemReset(void)
   if(currentSystemResetCallback)
     (*currentSystemResetCallback)();
 
-  //flush(); //TODO uncomment when Firmata is a subclass of HardwareSerial1
+  //flush(); //TODO uncomment when Firmata is a subclass of HardwareSerial
 }
 
 
@@ -437,6 +439,6 @@ void FirmataClass::pin13strobe(int count, int onInterval, int offInterval)
 
 
 // make one instance for the user to use
-FirmataClass Firmata;
+FirmataClass Firmata(Serial);
 
 

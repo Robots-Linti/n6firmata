@@ -13,16 +13,15 @@
 #ifndef Firmata_h
 #define Firmata_h
 
-#include <WProgram.h>
-#include <inttypes.h>
-
+#include "Boards.h"  /* Hardware Abstraction Layer + Wiring/Arduino */
 
 /* Version numbers for the protocol.  The protocol is still changing, so these
  * version numbers are important.  This number can be queried so that host
  * software can test whether it will be compatible with the currently
  * installed firmware. */
 #define FIRMATA_MAJOR_VERSION   2 // for non-compatible changes
-#define FIRMATA_MINOR_VERSION   2 // for backwards compatible changes
+#define FIRMATA_MINOR_VERSION   3 // for backwards compatible changes
+#define FIRMATA_BUGFIX_VERSION  1 // for bugfix releases
 
 #define MAX_DATA_BYTES 32 // max number of data bytes in non-Sysex messages
 
@@ -39,19 +38,6 @@
 //
 #define START_SYSEX             0xF0 // start a MIDI Sysex message
 #define END_SYSEX               0xF7 // end a MIDI Sysex message
-
-
-//begin DuinoBot
-#define MOTOR_0_COMMAND			0x01
-#define MOTOR_1_COMMAND			0x02
-#define PING_COMMAND			0x03
-#define MOTOR_COMMAND			0x04
-#define TONE_COMMAND			0x05
-#define ANALOG_INPUT_REQUEST	0x06
-#define DIGITAL_INPUT_REQUEST	0x07
-#define CHANGE_ROBOT_ID			0x08
-#define BROADCAST_REPORT		0x09
-//end DuinoBot
 
 // extended command set using sysex (0-127/0x00-0x7F)
 /* 0x00-0x0F reserved for user-defined commands */
@@ -101,10 +87,11 @@ extern "C" {
 class FirmataClass
 {
 public:
-	FirmataClass();
+	FirmataClass(Stream &s);
 /* Arduino constructors */
     void begin();
     void begin(long);
+    void begin(Stream &s);
 /* querying functions */
 	void printVersion(void);
     void blinkVersion(void);
@@ -129,6 +116,7 @@ public:
     void detach(byte command);
 
 private:
+    Stream &FirmataSerial;
 /* firmware name and version */
     byte firmwareVersionCount;
     byte *firmwareVersionVector;
@@ -154,6 +142,9 @@ private:
     void processSysexMessage(void);
 	void systemReset(void);
     void pin13strobe(int count, int onInterval, int offInterval);
+    void sendValueAsTwo7bitBytes(int value);
+    void startSysex(void);
+    void endSysex(void);
 };
 
 extern FirmataClass Firmata;
@@ -167,9 +158,6 @@ extern FirmataClass Firmata;
  * firmware source file rather than the library source file.
  */
 #define setFirmwareVersion(x, y)   setFirmwareNameAndVersion(__FILE__, x, y)
-
-/* Hardware Abstraction Layer */
-#include "Boards.h"
 
 #endif /* Firmata_h */
 
