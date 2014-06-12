@@ -395,7 +395,8 @@ void sysexCallback(byte command, byte argc, byte *argv)
     for(int i=0;i<argv[1];++i)
    {
      acum_aux+=analogRead(argv[0]);
-   } 
+   }
+    acum_aux /= argv[1];
     Serial1.write(START_SYSEX);
     Serial1.write(ANALOG_INPUT_REQUEST);    
     Serial1.write((acum_aux)>>7);
