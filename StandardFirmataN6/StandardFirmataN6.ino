@@ -572,13 +572,13 @@ void sysexCallback(byte command, byte argc, byte *argv)
   //  START (0xF0) TONE (0x05) FREQ_HI FREQ_LO <DURATION> END (0xF7)
     if(argc>3 && argv[3]==ROBOT_ID)
     {
-      //tone(23, 128*argv[0]+argv[1], argv[2]);
+      tone(23, 128*argv[0]+argv[1], argv[2]);
     }else if(argc>2 && argv[2]==ROBOT_ID)
     {
-      //tone(23, 128*argv[0]+argv[1]);
+      tone(23, 128*argv[0]+argv[1]);
     }else if(argc==1 && argv[0]==ROBOT_ID)
     {
-      //noTone(23);
+      noTone(23);
     }  
   break;    
   case ANALOG_INPUT_REQUEST:
