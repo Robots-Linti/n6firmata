@@ -700,7 +700,12 @@ void systemResetCallback()
 
 void setup() 
 {
-  Firmata.setFirmwareVersion(FIRMATA_MAJOR_VERSION, FIRMATA_MINOR_VERSION);
+  byte i;
+
+  motor0.setZeroZone(1);
+  motor1.setZeroZone(1);
+
+  Firmata.setFirmwareVersion(2, 2);
 
   Firmata.attach(ANALOG_MESSAGE, analogWriteCallback);
   Firmata.attach(DIGITAL_MESSAGE, digitalWriteCallback);
@@ -708,10 +713,44 @@ void setup()
   Firmata.attach(REPORT_DIGITAL, reportDigitalCallback);
   Firmata.attach(SET_PIN_MODE, setPinModeCallback);
   Firmata.attach(START_SYSEX, sysexCallback);
-  Firmata.attach(SYSTEM_RESET, systemResetCallback);
+
+
+
+  // TODO: load state from EEPROM here
+
+  /* these are initialized to zero by the compiler startup code
+  for (i=0; i < TOTAL_PORTS; i++) {
+    reportPINs[i] = false;
+    portConfigInputs[i] = 0;
+    previousPINs[i] = 0;
+  }
+  */
+  for (i=0; i < TOTAL_PINS; i++) {
+    if (IS_PIN_ANALOG(i)) {
+      // turns off pullup, configures everything
+      setPinModeCallback(i, ANALOG);
+    } else {
+      // sets the output to 0, configures portConfigInputs
+      setPinModeCallback(i, OUTPUT);
+    }
+  }
+  // by defult, do not report any analog inputs
+  analogInputsToReport = 0;
+
+  ROBOT_ID=EEPROM.read(0);
+  if(ROBOT_ID>127)
+  {
+     ROBOT_ID=0;
+     EEPROM.write(0,ROBOT_ID);
+  }
 
   Firmata.begin(57600);
-  systemResetCallback();  // reset to default config
+
+  /* send digital inputs to set the initial state on the host computer,
+   * since once in the loop(), this firmware will only send on change */
+  for (i=0; i < TOTAL_PORTS; i++) {
+    outputPort(i, readPort(i, portConfigInputs[i]), true);
+  }
 }
 
 /*==============================================================================
