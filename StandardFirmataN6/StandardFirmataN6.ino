@@ -441,15 +441,16 @@ void sysexCallback(byte command, byte argc, byte *argv)
   case SERVO_CONFIG:
     if(argc > 4) {
       // these vars are here for clarity, they'll optimized away by the compiler
-      byte pin = argv[0];
-      int minPulse = argv[1] + (argv[2] << 7);
-      int maxPulse = argv[3] + (argv[4] << 7);
-
-      if (IS_PIN_SERVO(pin)) {
-        if (servos[PIN_TO_SERVO(pin)].attached())
-          servos[PIN_TO_SERVO(pin)].detach();
-        servos[PIN_TO_SERVO(pin)].attach(PIN_TO_DIGITAL(pin), minPulse, maxPulse);
-        setPinModeCallback(pin, SERVO);
+      if ((argc >= 6 && argv[5] == ROBOT_ID ) || argc < 6){
+          byte pin = argv[0];
+          int minPulse = argv[1] + (argv[2] << 7);
+          int maxPulse = argv[3] + (argv[4] << 7);
+          if (IS_PIN_SERVO(pin)) {
+            if (servos[PIN_TO_SERVO(pin)].attached())
+              servos[PIN_TO_SERVO(pin)].detach();
+            servos[PIN_TO_SERVO(pin)].attach(PIN_TO_DIGITAL(pin), minPulse, maxPulse);
+            setPinModeCallback(pin, SERVO);
+          }
       }
     }
     break;
@@ -623,8 +624,16 @@ void sysexCallback(byte command, byte argc, byte *argv)
     Serial1.write(BROADCAST_REPORT);    
     Serial1.write(ROBOT_ID);           
     Serial1.write(END_SYSEX); 
-  break;   
-
+  break;  
+  
+   case MOVE_SERVO:
+  // START (0xF0) MOVE_SERVO(0x0A) PIN ANGLE_HI(128-255) ANGLE_LO(0-127) END (0xF7)
+   if(argc>3 && argv[3]==ROBOT_ID){
+        if (IS_PIN_SERVO(argv[0])) {        
+            servos[PIN_TO_SERVO(argv[0])].write(argv[1]*128+argv[2]);
+        }
+        }
+  break;
   }
 }
 
@@ -713,6 +722,7 @@ void setup()
   Firmata.attach(REPORT_DIGITAL, reportDigitalCallback);
   Firmata.attach(SET_PIN_MODE, setPinModeCallback);
   Firmata.attach(START_SYSEX, sysexCallback);
+  
 
 
 
