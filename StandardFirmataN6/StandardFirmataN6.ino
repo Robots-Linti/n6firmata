@@ -29,12 +29,12 @@
  * TODO: use Program Control to load stored profiles from EEPROM
  */
 
-#include "../lib/Servo/Servo.h"
+#include <Servo.h>
 //#include <Wire.h>
-#include "../lib/Firmata/Firmata.h"
-#include "../lib/DCMotor/DCMotor.h"
+#include <Firmata.h>
+#include <DCMotor.h>
 #include "Ping.h"
-#include "../lib/EEPROM/EEPROM.h"
+#include <EEPROM.h>
 
 // move the following defines to Firmata.h?
 #define I2C_WRITE B00000000
