@@ -719,41 +719,11 @@ void setup()
 /*==============================================================================
  * LOOP()
  *============================================================================*/
-void loop() 
+void loop()
 {
-  byte pin, analogPin;
-
-  /* DIGITALREAD - as fast as possible, check for changes and output them to the
-   * FTDI buffer using FIRMATA_SERIAL.print()  */
-  checkDigitalInputs();  
-
   /* SERIALREAD - processing incoming messagse as soon as possible, while still
    * checking digital inputs.  */
   while(Firmata.available())
     Firmata.processInput();
 
-  /* SEND FTDI WRITE BUFFER - make sure that the FTDI buffer doesn't go over
-   * 60 bytes. use a timer to sending an event character every 4 ms to
-   * trigger the buffer to dump. */
-
-  currentMillis = millis();
-  if (currentMillis - previousMillis > samplingInterval) {
-    previousMillis += samplingInterval;
-    /* ANALOGREAD - do all analogReads() at the configured sampling interval */
-    for(pin=0; pin<TOTAL_PINS; pin++) {
-      if (IS_PIN_ANALOG(pin) && pinConfig[pin] == ANALOG) {
-        analogPin = PIN_TO_ANALOG(pin);
-        if (analogInputsToReport & (1 << analogPin)) {
-          Firmata.sendAnalog(analogPin, analogRead(analogPin));
-        }
-      }
-    }
-    // report i2c data for all device with read continuous mode enabled
-//    if (queryIndex > -1) {
-//      for (byte i = 0; i < queryIndex + 1; i++) {
-//        readAndReportData(query[i].addr, query[i].reg, query[i].bytes);
-//      }
-//    }
-
-  }
 }
