@@ -45,6 +45,14 @@
 //end DuinoBot
 #endif
 
+// Comandos extendidos y mejorados para Duinobot
+#ifndef PIN_COMMANDS
+#define PIN_COMMANDS    0x0F
+#define PIN_GET_ANALOG  0x01
+#define PIN_GET_DIGITAL 0x02
+#endif
+
+
 #include <Servo.h>
 //#include <Wire.h>
 #include <Firmata.h>
@@ -373,10 +381,10 @@ void sysexCallback(byte command, byte argc, byte *argv)
   if (command == BROADCAST_REPORT){
     // START (0xF0) PIN END (0xF7)
     // El report es el único comando que no requiere ROBOT_ID
-    Serial1.write(START_SYSEX);
-    Serial1.write(BROADCAST_REPORT);
-    Serial1.write(ROBOT_ID);
-    Serial1.write(END_SYSEX);
+    FIRMATA_SERIAL.write(START_SYSEX);
+    FIRMATA_SERIAL.write(BROADCAST_REPORT);
+    FIRMATA_SERIAL.write(ROBOT_ID);
+    FIRMATA_SERIAL.write(END_SYSEX);
     return;
   }
 
@@ -580,6 +588,34 @@ void sysexCallback(byte command, byte argc, byte *argv)
             servos[PIN_TO_SERVO(argv[0])].write(argv[1]*128+argv[2]);
         }
         }
+  break;
+   case PIN_COMMANDS:
+  //  START (0xF0) PIN_COMMANDS [PIN_GET_ANALOG|PIN_GET_DIGITAL] PIN [SAMPLES] ROBOT_ID (0-127) END (0xF7)
+  if (argc == 4 && argv[0] == PIN_GET_ANALOG){
+      unsigned int acum_aux=0;
+      for(int i=0;i<argv[2];++i)
+      {
+          acum_aux+=analogRead(argv[1]);
+      }
+      acum_aux /= argv[2];
+      FIRMATA_SERIAL.write(START_SYSEX);
+      FIRMATA_SERIAL.write(PIN_COMMANDS);
+      FIRMATA_SERIAL.write(PIN_GET_ANALOG);
+      FIRMATA_SERIAL.write((acum_aux)>>7);
+      FIRMATA_SERIAL.write((acum_aux)%128);
+      FIRMATA_SERIAL.write(argv[1]);
+      FIRMATA_SERIAL.write(ROBOT_ID);
+      FIRMATA_SERIAL.write(END_SYSEX);
+  }
+  else if (argc == 3 && argv[0] == PIN_GET_DIGITAL){
+      FIRMATA_SERIAL.write(START_SYSEX);
+      FIRMATA_SERIAL.write(PIN_COMMANDS);
+      FIRMATA_SERIAL.write(PIN_GET_DIGITAL);
+      FIRMATA_SERIAL.write(digitalRead(argv[1]));
+      FIRMATA_SERIAL.write(argv[1]);
+      FIRMATA_SERIAL.write(ROBOT_ID);
+      FIRMATA_SERIAL.write(END_SYSEX);
+  }
   break;
   }
 }
