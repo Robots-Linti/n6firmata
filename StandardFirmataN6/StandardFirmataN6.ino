@@ -67,7 +67,7 @@
 
 // Multiplo N6 Max
 #elif defined(__AVR_ATmega1284P__)
-#define FIRMATA_SERIAL Serial
+#define FIRMATA_SERIAL Serial1
 
 #else
     #error "No serial port definition for this board in StandardFirmata"
