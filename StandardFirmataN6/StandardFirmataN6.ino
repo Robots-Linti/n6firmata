@@ -473,9 +473,9 @@ void sysexCallback(byte command, byte argc, byte *argv)
       FIRMATA_SERIAL.write(pin);
       if (pin < TOTAL_PINS) {
         FIRMATA_SERIAL.write((byte)pinConfig[pin]);
-	FIRMATA_SERIAL.write((byte)pinState[pin] & 0x7F);
-	if (pinState[pin] & 0xFF80) FIRMATA_SERIAL.write((byte)(pinState[pin] >> 7) & 0x7F);
-	if (pinState[pin] & 0xC000) FIRMATA_SERIAL.write((byte)(pinState[pin] >> 14) & 0x7F);
+    FIRMATA_SERIAL.write((byte)pinState[pin] & 0x7F);
+    if (pinState[pin] & 0xFF80) FIRMATA_SERIAL.write((byte)(pinState[pin] >> 7) & 0x7F);
+    if (pinState[pin] & 0xC000) FIRMATA_SERIAL.write((byte)(pinState[pin] >> 14) & 0x7F);
       }
       FIRMATA_SERIAL.write(ROBOT_ID);
       FIRMATA_SERIAL.write(END_SYSEX);
@@ -690,13 +690,18 @@ void systemResetCallback()
   */
 }
 
-void setup() 
-{
-  byte i;
+void setPWMfreq() {     // Pregunto por tipo de placa y seteo la frecuencia PWM
   #if defined(__AVR_ATmega1284P__)
   TCCR1A = TCCR1A & B11111000 | B00000001;
   TCCR1B = TCCR1B & B11111000 | B00000001;
   #endif
+}
+
+void setup() 
+{
+  byte i;
+
+  setPWMfreq();     // Llamo a la funcion que setea la frecuencia PWM
 
   motor0.setZeroZone(1);
   motor1.setZeroZone(1);
@@ -710,9 +715,6 @@ void setup()
   Firmata.attach(SET_PIN_MODE, setPinModeCallback);
 */
   Firmata.attach(START_SYSEX, sysexCallback);
-  
-
-
 
   // TODO: load state from EEPROM here
 
