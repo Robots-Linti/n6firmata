@@ -593,9 +593,12 @@ void sysexCallback(byte command, byte argc, byte *argv)
   //  START (0xF0) PIN_COMMANDS [PIN_GET_ANALOG|PIN_GET_DIGITAL] PIN [SAMPLES] ROBOT_ID (0-127) END (0xF7)
   if (argc == 4 && argv[0] == PIN_GET_ANALOG){
       unsigned int acum_aux=0;
+      // La API de Python envía un número de pin analógico del 0 al 6, aquí es
+      // necesario convertirlo para utilizarlo con analogRead()
+      unsigned int pin_nr = argv[1] + A0;
       for(int i=0;i<argv[2];++i)
       {
-          acum_aux+=analogRead(argv[1]);
+          acum_aux+=analogRead(pin_nr);
       }
       acum_aux /= argv[2];
       FIRMATA_SERIAL.write(START_SYSEX);
@@ -603,7 +606,7 @@ void sysexCallback(byte command, byte argc, byte *argv)
       FIRMATA_SERIAL.write(PIN_GET_ANALOG);
       FIRMATA_SERIAL.write((acum_aux)>>7);
       FIRMATA_SERIAL.write((acum_aux)%128);
-      FIRMATA_SERIAL.write(argv[1]);
+      FIRMATA_SERIAL.write(argv[1]);  // En la respuesta se utiliza el nro de pin original
       FIRMATA_SERIAL.write(ROBOT_ID);
       FIRMATA_SERIAL.write(END_SYSEX);
   }
